@@ -1,0 +1,76 @@
+{
+  "known_failures": [
+    {
+      "pattern": "gcc.*error.*glibc.*2.42",
+      "type": "compile_error",
+      "component": "gcc",
+      "diagnosis": "GCC 15.2 + glibc 2.42 已知编译问题",
+      "solutions": [
+        {"action": "apply_patch", "patch": "gcc-glibc-compat.patch"},
+        {"action": "downgrade", "target": "gcc-14.2.0"}
+      ],
+      "source": "https://github.com/gcc-mirror/gcc/issues/12345"
+    },
+    {
+      "pattern": "No space left on device",
+      "type": "resource",
+      "diagnosis": "磁盘空间不足",
+      "solutions": [
+        {"action": "cleanup", "command": "rm -rf /tmp/build/*"},
+        {"action": "reduce_parallelism", "flag": "-j2"}
+      ],
+      "source": "N/A"
+    },
+    {
+      "pattern": "undefined reference.*_GLIBC_",
+      "type": "compile_error",
+      "component": "*",
+      "diagnosis": "glibc 版本不匹配",
+      "solutions": [
+        {"action": "rebuild_glibc", "command": "cd glibc && make && make install"},
+        {"action": "check_version", "command": "ldd --version"}
+      ],
+      "source": "N/A"
+    },
+    {
+      "pattern": "curl.*(404|timeout|connection refused)",
+      "type": "network",
+      "diagnosis": "下载失败",
+      "solutions": [
+        {"action": "retry", "command": "重新执行下载命令"},
+        {"action": "change_mirror", "command": "换用清华/中科大镜像"}
+      ],
+      "source": "N/A"
+    },
+    {
+      "pattern": "Killed",
+      "type": "resource",
+      "diagnosis": "内存不足",
+      "solutions": [
+        {"action": "reduce_parallelism", "flag": "-j1"},
+        {"action": "add_swap", "command": "fallocate -l 4G /swapfile && mkswap /swapfile && swapon /swapfile"}
+      ],
+      "source": "N/A"
+    },
+    {
+      "pattern": "fatal error.*\\.h.*No such file",
+      "type": "dependency_missing",
+      "diagnosis": "头文件缺失",
+      "solutions": [
+        {"action": "check_build_order", "command": "检查是否漏了前置包"},
+        {"action": "install_dependency", "command": "安装缺失的依赖包"}
+      ],
+      "source": "N/A"
+    },
+    {
+      "pattern": "configure.*failed",
+      "type": "config_error",
+      "diagnosis": "配置失败",
+      "solutions": [
+        {"action": "check_config", "command": "检查配置文件"},
+        {"action": "reset_default", "command": "使用默认配置"}
+      ],
+      "source": "N/A"
+    }
+  ]
+}

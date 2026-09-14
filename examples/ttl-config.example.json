@@ -1,0 +1,65 @@
+{
+  "distro_name": "my-linux",
+  "base": "lfs-12.4 + blfs-13.1",
+  "hardware_profile": {
+    "os": "Windows 11",
+    "cpu": "Intel i7-8700K",
+    "cpu_arch": "haswell",
+    "cpu_flags": ["avx2", "fma", "sse4_2"],
+    "cpu_cores": 6,
+    "ram_gb": 32,
+    "disk_type": "nvme",
+    "disk_size_gb": 1000,
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_driver": "nvidia",
+    "display_resolution": "2560x1440",
+    "installed_software": ["chrome", "vscode", "steam", "obs-studio"]
+  },
+  "desktop": "kde",
+  "desktop_theme": {
+    "icon_theme": "yaru",
+    "cursor_theme": "adwaita",
+    "wallpaper": "auto_select",
+    "fonts": ["noto-cjk", "jetbrains-mono"]
+  },
+  "input_method": {
+    "framework": "fcitx5",
+    "im_list": ["rime", "pinyin"]
+  },
+  "kernel": {
+    "version": "6.16.1",
+    "hardened": true,
+    "cpu_optimizations": ["avx2", "fma"],
+    "gpu_driver": "nvidia",
+    "power_profile": "performance"
+  },
+  "packages": {
+    "core": ["firefox", "thunderbird", "vlc", "obs-studio"],
+    "dev": ["git", "vim", "python3", "nodejs", "vscode"],
+    "extra": ["steam", "lutris", "blender", "gimp"]
+  },
+  "windows_compat": {
+    "wine_version": "9.0",
+    "winapps": true,
+    "preinstalled_apps": ["wechat", "qq"]
+  },
+  "ai_assistant": {
+    "model": "qwen3.5-9b",
+    "quantization": "q4_k_m",
+    "runtime": "llama.cpp",
+    "system_prompt": "你是 TTL 系统内置 AI 助手，核心理念是'开箱即用 × 极致特化'。帮助用户解答 Linux 使用问题，根据用户硬件主动建议性能优化方案，帮助排查故障，推荐适合用户场景的软件。"
+  },
+  "install": {
+    "unattended": true,
+    "disk_layout": "auto",
+    "timezone": "Asia/Shanghai",
+    "locale": "zh_CN.UTF-8",
+    "username": "user",
+    "encryption": false
+  },
+  "search_protocol": {
+    "enabled": true,
+    "search_sources": ["web", "lfs-forum", "arch-wiki", "fedoramagazine"],
+    "decision_log": true
+  }
+}
