@@ -1,4 +1,4 @@
-# TTL 搜索-决策-记录-避坑 协议
+# 搜索-决策-记录-避坑 协议
 
 ## 目的
 
@@ -15,14 +15,6 @@
   "<component> best <aspect> for <hardware> <year>"
   "<component> <version> recommended configuration <year>"
   "<component> performance optimization <hardware> <year>"
-
-示例：
-  "GCC 15 best -march flags for haswell 2025"
-  "glibc 2.42 recommended security flags 2025"
-  "Linux 6.16 kernel best config for NVIDIA RTX 3090 2025"
-  "KDE Plasma 6 best theme configuration 2025"
-  "Wine 9 best setup for NVIDIA RTX 3090 2025"
-  "llama.cpp best build flags for haswell 2025"
 ```
 
 ### 轨道 2：避坑搜索（必须执行）
@@ -35,14 +27,6 @@
   "<component> <hardware> compatibility problems <year>"
   "<component> <aspect> pitfalls workarounds <year>"
   "<component> <aspect> crash hang freeze <year>"
-
-示例：
-  "GCC 15 -march haswell known issues bugs 2025"
-  "glibc 2.42 build problems workarounds"
-  "Wine 9 NVIDIA 555 driver crash workaround"
-  "KDE Plasma 6 fcitx5 input method problems"
-  "Linux 6.16 kernel NVIDIA RTX 3090 boot issues"
-  "llama.cpp Qwen3.5-9B inference problems"
 ```
 
 ## 避坑检查清单（每步必查）
@@ -68,71 +52,40 @@
 7. **Stack Exchange**：unix.stackexchange.com
 8. **组件论坛**：各组件官方论坛
 
-## 输出格式
+## 输出要求
 
-### 决策日志（decision-log.json）
+### 决策日志（每步生成）
 
-```json
-{
-  "step": "step4-base-system",
-  "timestamp": "2025-09-15T10:00:00Z",
-  "decisions": [
-    {
-      "component": "gcc",
-      "version": "15.2.0",
-      "reason": "LFS 12.4 指定版本，经搜索确认为当前最稳定",
-      "flags": ["-march=haswell", "-flto", "-enable-default-pie", "-enable-default-ssp"],
-      "reason_flags": "用户 CPU 为 Intel i7-8700K (Haswell)，支持 AVX2；LTO 启用链接时优化；PIE+SSP 安全加固",
-      "sources": [
-        "https://gcc.gnu.org/install/",
-        "https://www.linuxfromscratch.org/lfs/view/stable/chapter08/gcc.html"
-      ]
-    }
-  ]
-}
-```
+每个组件记录：
+- 组件名 + 版本
+- 选择理由（为什么选这个版本）
+- 编译参数 + 参数理由（为什么用这些参数）
+- 参考来源（URL 列表）
 
-### 避坑报告（pitfall-report.json）
+### 避坑报告（每步生成）
 
-```json
-{
-  "step": "step4-base-system",
-  "timestamp": "2025-09-15T10:00:00Z",
-  "pitfalls": [
-    {
-      "component": "gcc",
-      "issue": "GCC 15.2 + glibc 2.42 在特定条件下编译失败",
-      "severity": "medium",
-      "workaround": "应用 gcc-glibc-compat.patch",
-      "source": "https://github.com/gcc-mirror/gcc/issues/12345",
-      "mitigated": true,
-      "mitigation": "已应用 patch"
-    },
-    {
-      "component": "glibc",
-      "issue": "glibc 2.42 在 32 位系统上内存泄漏",
-      "severity": "low",
-      "workaround": "不适用（64 位系统）",
-      "source": "https://sourceware.org/bugzilla/show_bug.cgi?id=30000",
-      "mitigated": false,
-      "mitigation": "N/A（64 位系统不受影响）"
-    }
-  ]
-}
-```
+每个已知坑记录：
+- 组件名
+- 问题描述
+- 严重程度（critical / medium / low）
+- 规避措施
+- 来源
+- 是否已规避 + 规避方式
 
 ## 搜索频率
 
 - **每步开始前**：必须执行双轨搜索
-- **每个包编译前**：Step 4 的 50 个包，每个包都要搜索
+- **每个包编译前**：基础系统的每个包都要搜索
 - **失败时**：额外搜索错误信息的 workaround
 
-## 搜索工具
+## 搜索工具指导
 
-- **web_search**：通用搜索
-- **web_fetch**：获取具体页面
-- **grep**：本地文档搜索
-- **curl**：直接获取 API/页面
+- 优先使用多引擎搜索（免 API key）；单一引擎降为后备
+- 仅当多引擎缺失或连续失败才用单一引擎
+- 搜索结果的 URL 用 HTTP 抓取获取完整页面内容
+- 本地文档搜索用 ripgrep 正则
+- 搜索前检查已失败的查询记录，避免重复搜索
+- 每次搜索后记录查询 + 结果摘要
 
 ## 注意事项
 

@@ -1,4 +1,4 @@
-# TTL 失败分类 + 恢复指导 协议
+# 失败分类 + 恢复指导 协议
 
 ## 目的
 
@@ -12,12 +12,7 @@
    - 失败步骤 + 包名 + 命令
    - 系统状态（磁盘空间、内存、CPU）
 
-2. 分类失败
-   - 类型 A：网络问题（下载失败）
-   - 类型 B：编译错误（源码 bug）
-   - 类型 C：依赖缺失
-   - 类型 D：资源不足（磁盘/内存）
-   - 类型 E：配置错误
+2. 分类失败（五类）
 
 3. 生成恢复方案
    - 多个恢复选项 + 风险等级
@@ -43,7 +38,7 @@
 
 **恢复方案**：
 1. 重试（可能是临时网络问题）
-2. 换镜像源（如从官方源换到清华/中科大镜像）
+2. 换镜像源
 3. 检查网络连接
 4. 使用离线包（如果之前下载过）
 
@@ -52,24 +47,24 @@
 ### 类型 B：编译错误
 
 **特征**：
-- 编译器报错（error: ...）
+- 编译器报错
 - 链接器报错（undefined reference）
 - 测试失败（make check 失败）
 
 **恢复方案**：
-1. 搜索 workaround（web_search）
+1. 搜索 workaround
 2. 应用社区 patch
-3. 降级版本（如 GCC 15.2 → 14.2）
+3. 降级版本
 4. 跳过该包（如非核心包）
-5. 调整编译参数（如去掉 -march=native）
+5. 调整编译参数
 
 **风险等级**：medium（降级/跳过）/ low（patch）
 
 ### 类型 C：依赖缺失
 
 **特征**：
-- 找不到头文件（fatal error: xxx.h: No such file）
-- 找不到库（cannot find -lxxx）
+- 找不到头文件
+- 找不到库
 - 依赖包未安装
 
 **恢复方案**：
@@ -83,13 +78,13 @@
 ### 类型 D：资源不足
 
 **特征**：
-- 磁盘空间不足（No space left on device）
+- 磁盘空间不足
 - 内存不足（out of memory、killed）
 - CPU 负载过高
 
 **恢复方案**：
-1. 清理临时文件（rm -rf /tmp/build/*）
-2. 减少并行度（make -j4 → make -j2）
+1. 清理临时文件
+2. 减少并行度
 3. 增加 swap（如果内存不足）
 4. 分步构建（先构建小包，清理后再构建大包）
 
@@ -110,109 +105,25 @@
 
 **风险等级**：medium
 
-## 恢复方案格式
+## 恢复方案要求
 
-```json
-{
-  "failure_type": "compile_error",
-  "component": "gcc-15.2.0",
-  "step": "step4-base-system",
-  "command": "make install",
-  "error_summary": "error: ...",
-  "error_log": "完整错误日志",
-  "diagnosis": "已知问题：GCC 15.2 + glibc 2.42 在特定条件下编译失败",
-  "recovery_options": [
-    {
-      "option": "apply_patch",
-      "description": "应用社区 patch",
-      "risk": "low",
-      "command": "patch -p1 < gcc-glibc-compat.patch",
-      "estimated_time": "5 分钟"
-    },
-    {
-      "option": "downgrade_version",
-      "description": "降级到 GCC 14.2",
-      "risk": "medium（失去部分优化）",
-      "command": "use gcc-14.2.0 from versions.lock",
-      "estimated_time": "30 分钟"
-    },
-    {
-      "option": "skip_package",
-      "description": "跳过（非核心包）",
-      "risk": "high（可能影响后续包）",
-      "applicable": false,
-      "reason": "GCC 是核心包，不能跳过"
-    }
-  ],
-  "recommended": "apply_patch",
-  "resume_point": {
-    "step": "step4-base-system",
-    "package": "gcc-15.2.0",
-    "action": "make (retry after patch)"
-  }
-}
-```
+每个恢复方案必须包含：
+- 选项名 + 描述
+- 风险等级（low / medium / high）
+- 具体操作（命令或步骤）
+- 预计耗时
+- 是否适用（如不适用，说明原因）
 
-## 失败知识库（failure-kb.json）
+推荐选项要明确标注。
 
-```json
-{
-  "known_failures": [
-    {
-      "pattern": "gcc.*error.*glibc.*2.42",
-      "type": "compile_error",
-      "component": "gcc",
-      "diagnosis": "GCC 15.2 + glibc 2.42 已知编译问题",
-      "solutions": [
-        {"action": "apply_patch", "patch": "gcc-glibc-compat.patch"},
-        {"action": "downgrade", "target": "gcc-14.2.0"}
-      ],
-      "source": "https://github.com/gcc-mirror/gcc/issues/12345"
-    },
-    {
-      "pattern": "No space left on device",
-      "type": "resource",
-      "diagnosis": "磁盘空间不足",
-      "solutions": [
-        {"action": "cleanup", "command": "rm -rf /tmp/build/*"},
-        {"action": "reduce_parallelism", "flag": "-j2"}
-      ],
-      "source": "N/A"
-    },
-    {
-      "pattern": "undefined reference.*_GLIBC_",
-      "type": "compile_error",
-      "component": "*",
-      "diagnosis": "glibc 版本不匹配",
-      "solutions": [
-        {"action": "rebuild_glibc", "command": "cd glibc && make && make install"},
-        {"action": "check_version", "command": "ldd --version"}
-      ],
-      "source": "N/A"
-    },
-    {
-      "pattern": "curl.*(404|timeout|connection refused)",
-      "type": "network",
-      "diagnosis": "下载失败",
-      "solutions": [
-        {"action": "retry", "command": "重新执行下载命令"},
-        {"action": "change_mirror", "command": "换用清华/中科大镜像"}
-      ],
-      "source": "N/A"
-    },
-    {
-      "pattern": "Killed",
-      "type": "resource",
-      "diagnosis": "内存不足",
-      "solutions": [
-        {"action": "reduce_parallelism", "flag": "-j1"},
-        {"action": "add_swap", "command": "fallocate -l 4G /swapfile && mkswap /swapfile && swapon /swapfile"}
-      ],
-      "source": "N/A"
-    }
-  ]
-}
-```
+## 失败知识库
+
+记录已知失败模式和解决方案：
+- 错误模式（正则或关键词）
+- 失败类型
+- 诊断（这是什么问题）
+- 解决方案列表（操作 + 参数）
+- 来源
 
 ## 升级处理
 
@@ -225,35 +136,32 @@
    - 进度文件
 
 2. **生成故障报告**：
-   ```json
-   {
-     "build_id": "ttl-20250915-001",
-     "failure_step": "step4-base-system",
-     "failure_package": "gcc-15.2.0",
-     "failure_command": "make install",
-     "error_log": "完整错误日志",
-     "system_state": {
-       "disk_space": "50GB free",
-       "memory": "16GB total, 12GB used",
-       "cpu_load": "4.5"
-     },
-     "attempted_solutions": [
-       {"option": "apply_patch", "result": "failed"},
-       {"option": "downgrade_version", "result": "failed"}
-     ],
-     "timestamp": "2025-09-15T14:30:00Z"
-   }
-   ```
+   - 构建标识
+   - 失败步骤 + 包 + 命令
+   - 错误日志
+   - 系统状态（磁盘、内存、CPU）
+   - 已尝试的恢复方案 + 结果
+   - 时间戳
 
 3. **指导用户联系维护者**：
-   - 提交 Issue（使用 build_failure.md 模板）
+   - 提交 Issue
    - 附上故障报告
    - 等待维护者回复
+
+## 循环防护指导
+
+构建失败后的恢复操作必须遵守循环防护规则：
+
+- **指纹去重**：失败过的恢复命令禁止原样再执行；累计 3 次（含首执）后永久禁该指纹。"换个说法再试"计同一指纹。
+- **进度停滞**：连续 3 轮无新进展（新信息/状态变化/新错误类型，至少占其一）= 停滞 → 停止 + 向用户报告
+- **轮次预算**：默认 15 轮/任务；构建任务开始时上调（建议 30 轮）并记录；耗尽未完成 = 终止
+- **同一错误连续 2 次** → 停止重试，必须换方案（换参数/换方法/换工具/报告阻塞）
+- **策略切换**：切换前在状态文件记录「已尝试什么 + 为何换 + 新策略」；新策略必须产生不同于旧指纹的指纹
 
 ## 注意事项
 
 1. **不要盲目重试**：同一错误连续 2 次失败后，必须换方案
-2. **记录所有尝试**：每个恢复方案的结果都要记录
+2. **记录所有尝试**：每个恢复方案的结果都要记录（写入状态文件 `## 操作指纹`）
 3. **风险告知**：每个恢复方案都要告知风险等级
 4. **用户确认**：高风险方案（如降级、跳过）需要用户确认
-5. **进度更新**：每次恢复后都要更新进度文件
+5. **进度更新**：每次恢复后都要更新进度文件 + 状态文件

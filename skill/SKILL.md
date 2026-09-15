@@ -1,6 +1,22 @@
-# TTL SKILL — TimeToLinux 个性化桌面发行版构建
+---
+name: ttl
+description: 指导 agent 帮用户构建专属于他的完整桌面 Linux 发行版（LFS+BLFS 路线），开箱即用 × 极致特化。触发：想切换到 Linux / 帮我构建一个 Linux 发行版 / 我想用 Linux 但不知道选哪个 / 帮我做一个专属于我的 Linux。
+---
+
+# TTL SKILL — 指导 Agent 构建个性化桌面 Linux 发行版
 
 > 当用户表达"想切换到 Linux"、"帮我构建一个 Linux 发行版"、"我想用 Linux 但不知道选哪个"等意图时，加载本 SKILL。
+
+## 定位
+
+本 SKILL **只指导 agent 该怎么做**，不包含任何构建脚本、配置 schema、软件清单或具体参数值。
+
+agent 的职责是：探查用户环境 → 询问用户偏好 → 每个决策点主动搜索 → 生成构建配置 → 指导构建执行 → 构建失败时提供恢复指导。
+
+**构建环境准备和各步骤坑点详见 `build-environment.md`**。
+**GitHub Actions 构建指导详见 `github-actions.md`**。
+**构建报告 + 产物指南详见 `report-protocol.md`**。
+**安装后系统配置详见 `system-setup.md`**。
 
 ## 核心理念（刻入 DNA）
 
@@ -8,9 +24,201 @@
 > 不是"装完能用"，而是"装完就像为你量身定做了三年"。
 
 - **完整桌面体验**：启动即进图形桌面，不是无界面服务器
-- **全链路性能优化**：从 GCC 工具链 → glibc → 内核 → 用户空间，全部针对用户 CPU 指令集重新编译
-- **开箱即用**：桌面美化、输入法、Windows 软件兼容（Wine/WinApps）全部预配置
-- **内嵌 AI**：Qwen3.5-9B 本地问答助手，携带同样的理念持续帮用户优化
+- **全链路性能优化**：从工具链 → C 库 → 内核 → 用户空间，全部针对用户 CPU 指令集重新编译
+- **开箱即用**：桌面美化、输入法、Windows 软件兼容全部预配置
+- **内嵌 AI**：本地问答助手，携带同样的理念持续帮用户优化
+
+## 完整流程
+
+### 阶段 A：用户电脑端（SKILL 驱动）
+
+**A1. 环境探查**
+
+收集用户硬件信息（执行探查命令或逐项询问用户）：
+- CPU 型号与指令集（决定 `-march` 和编译优化方向）
+- 内存大小（决定桌面环境推荐和内核调优方向）
+- 磁盘类型（SSD/HDD/NVMe，决定 I/O 调优）
+- GPU 型号与驱动类型（NVIDIA/AMD/Intel，决定内核模块和驱动方案）
+- 已装软件（决定预装软件清单）
+
+**SKILL 行为**：根据探查结果，主动搜索该硬件的最佳 Linux 配置（双轨搜索，详见 `search-protocol.md`）
+  - 例：检测到 NVIDIA RTX 4090 → 搜索 "RTX 4090 Linux best kernel config 2025" + "RTX 4090 Linux known issues 2025"
+  - 例：检测到 64GB 内存 → 搜索 "64GB RAM Linux vm tuning best practices"
+
+**A2. 偏好问答**（通俗语言，根据硬件推荐选项）
+
+逐项询问用户（每项附推荐 + 理由）：
+1. 桌面环境倾向（轻量 / 现代 / 可定制 / 极简）— 根据内存/CPU 推荐
+2. 常用软件类别（浏览器/办公/开发/媒体/游戏/设计）— 预装到 Linux
+3. 主要使用场景（办公/开发/游戏/设计/综合）— 决定内核调优方向
+4. 性能倾向（性能优先 / 均衡 / 省电）— 笔记本推荐均衡
+5. 安装方式（先体验 / 直接无人值守安装）— 建议先体验
+6. 其他偏好（语言/时区/双系统/加密）— 系统配置
+
+**SKILL 行为**：每个回答后，主动搜索该选择的最新最佳实践 + 避坑
+  - 例：用户选 KDE → 搜索 "KDE Plasma 6 best configuration 2025" + "KDE Plasma 6 known issues 2025"
+  - 例：用户选游戏 → 搜索 "Linux gaming best setup Proton 2025" + "Linux gaming known issues 2025"
+
+**A3. 生成配置**
+
+综合探查 + 问答 + 搜索结果，生成构建配置。配置应覆盖以下维度（每个字段附"为什么这样选"的注释）：
+- **硬件画像**：CPU 架构、指令集、核心数、内存、磁盘、GPU
+- **桌面环境**：选择 + 主题（图标/光标/壁纸/字体）
+- **输入法**：框架 + 输入法列表
+- **内核**：版本、加固选项、CPU 优化、GPU 驱动、电源策略
+- **软件包**：核心 / 开发 / 额外（根据用户选择）
+- **Windows 兼容**：Wine 版本、WinApps、预装应用
+- **AI 助手**：模型、量化、运行时、系统提示词
+- **安装**：无人值守、磁盘布局、时区、语言、用户名、加密
+
+向用户展示配置摘要 + 每个决策的理由 + 避坑报告，**等用户确认后再进入构建**。
+
+### 阶段 B：构建执行端（SKILL 理念驱动每步决策）
+
+**核心原则：每个构建步骤开始前，agent 必须执行"搜索-决策-记录"循环**（详见 `search-protocol.md`）
+
+每个步骤的标准流程：
+1. 读取进度文件（检查是否需要断点续传，详见 `progress-protocol.md`）
+2. 读取构建配置 + 版本锁定
+3. 搜索-决策-记录（最佳实践 + 避坑双轨）
+4. **询问用户**：本步的关键决策（版本选择、编译参数、配置选项）展示推荐 + 理由，等用户确认或调整后再执行
+5. 执行构建（带进度更新）
+6. 验证产物
+7. 更新进度文件
+8. 上传产物 + 决策日志 + 避坑报告
+
+**构建平台选择**（Step 1 前询问用户）：
+- 本地构建：用户自己机器上跑，agent 逐步指导
+- GitHub Actions：agent 生成 workflow 文件，用户 push 后自动构建（详见 `github-actions.md`）
+- 其他 CI：用户指定平台，agent 按该平台语法生成配置
+
+#### 构建步骤指导（LFS + BLFS 路线）
+
+**Step 1：主机准备**
+- 创建专用构建用户（非 root，无 shell 限制）
+- 安装 LFS 要求的主机工具链（gcc、glibc、binutils、make、bash、coreutils 等）
+- 创建 `/mnt/lfs` 目录并设置权限
+- 关键决策：确认主机工具链版本满足 LFS 最低要求
+- **询问用户**：构建平台选择（本地 / GitHub Actions / 其他 CI）+ 磁盘空间确认（100GB+）
+- 验证：`gcc --version`、`ldd --version`、`make --version` 输出符合 LFS 要求
+
+**Step 2：交叉工具链**
+- 编译针对用户 CPU 的 GCC 交叉编译器
+- 关键决策：`-march=<用户CPU架构>` 的选择（搜索该 CPU 的最佳 march 值 + 已知问题）
+- 关键决策：是否启用 LTO（链接时优化）— 搜索 LTO 当前版本的稳定性
+- 关键决策：PIE + SSP 安全加固参数
+- **询问用户**：march 值确认（展示推荐 + 理由）+ LTO 开关确认（展示稳定性搜索结果）
+- 验证：交叉编译器能编译并运行 hello world 测试程序
+- 注意：此步耗时最长（GCC 编译 30-60 分钟），必须后台跑
+
+**Step 3：Chroot 工具**
+- 在 chroot 环境中编译基础工具（binutils、gcc 第二阶段、glibc、coreutils 等）
+- 关键决策：glibc 安全参数（stack protector 级别）
+- 关键决策：Python 版本选择（搜索当前最稳定版本）
+- **询问用户**：Python 版本确认（展示推荐 + 理由）+ glibc 安全参数确认
+- 验证：chroot 内 `gcc`、`ld`、`bash` 可正常运行
+- 注意：chroot 环境内无网络，所有源码必须提前下载
+
+**Step 4：基础系统（~50 包）**
+- 按 LFS 指定顺序编译基础系统包
+- 关键决策：每个包的编译参数（CFLAGS/CXXFLAGS/LDFLAGS）
+- 关键决策：包版本选择（搜索每个包的当前最稳定版本 + 已知 bug）
+- 关键决策：构建顺序（依赖关系决定顺序，不可乱序）
+- **询问用户**：全局 CFLAGS 策略确认（`-march=native` vs 指定值 vs 保守值，展示推荐 + 理由）；每包版本如有多个候选，展示推荐 + 理由让用户确认
+- 验证：每包编译后运行 `make check`（如适用）+ 基本功能测试
+- 注意：50 个包逐个编译，总耗时 2-3 小时；每包前搜索最佳参数 + 避坑
+
+**Step 5：内核 + 引导加载器**
+- 编译针对用户硬件的 Linux 内核
+- 关键决策：内核配置（搜索 "Linux <version> best kernel config for <用户硬件>"）
+  - GPU 驱动模块（NVIDIA 需专有驱动，AMD/Intel 用开源驱动）
+  - NVMe 支持（根据磁盘类型）
+  - 调度器调优（根据性能倾向：性能/均衡/省电）
+  - 安全加固（KASLR、StackProtector）
+- 关键决策：引导加载器配置（UEFI vs Legacy，搜索用户主板最佳配置）
+- **询问用户**：内核配置摘要展示（GPU 驱动方案 + 调度器 + 安全加固），等用户确认；引导加载器 UEFI vs Legacy 确认
+- 验证：内核能编译通过 + 引导加载器配置正确
+- 注意：内核配置错误会导致无法启动，必须搜索避坑
+
+**Step 6：桌面体验**
+- 编译用户选择的桌面环境 + 全套组件
+- 关键决策：桌面环境版本（搜索当前最稳定 + 已知问题）
+- 关键决策：主题配置（图标/光标/壁纸/字体 — 搜索最佳搭配）
+- 关键决策：输入法配置（fcitx5 + Rime，搜索最佳配置 + 已知冲突）
+- 关键决策：网络配置（NetworkManager，搜索最佳配置）
+- 关键决策：声音配置（PipeWire，搜索最佳配置）
+- **询问用户**：桌面环境版本确认 + 主题搭配展示（图标/光标/壁纸/字体推荐方案）+ 输入法方案确认
+- 验证：桌面环境能启动 + 输入法可用 + 网络/声音正常
+- 注意：桌面环境编译耗时 1-2 小时；GPU 驱动与桌面环境的兼容性是最大坑点
+
+**Step 7：用户软件 + Windows 兼容**
+- 编译用户选择的软件包
+- 关键决策：每个软件的版本（搜索当前最稳定 + 已知问题）
+- 关键决策：Wine 配置（搜索 "Wine <version> best configuration for <用户GPU>"）
+- 关键决策：WinApps 配置（搜索最佳 setup）
+- **询问用户**：软件清单最终确认（展示完整列表 + 版本 + 理由）+ Wine 版本确认 + WinApps 开关确认
+- 验证：每个软件能正常运行
+- 注意：Wine + GPU 驱动兼容性是常见坑点，必须搜索避坑
+
+**Step 8：AI 助手**
+- 编译 llama.cpp + 下载模型
+- 关键决策：llama.cpp 编译参数（搜索 "llama.cpp best build flags for <用户CPU>"）
+- 关键决策：模型量化选择（根据内存：8GB→Q4_K_M，16GB→Q5_K_M，32GB+→Q6_K）
+- 关键决策：系统提示词（携带"开箱即用 × 极致特化"理念）
+- **询问用户**：模型选择确认（展示推荐模型 + 量化 + 理由）+ 系统提示词展示（等用户确认或修改）
+- 验证：模型能加载 + 推理正常 + 响应时间可接受
+- 注意：模型下载耗时（~5.7GB），必须后台跑
+
+**Step 9：打包 ISO**
+- 打包体验版 + 无人值守安装版
+- 关键决策：ISO 打包工具配置（搜索 "live-build best ISO configuration"）
+- 关键决策：无人值守安装配置（搜索 "unattended install best preseed config"）
+  - 体验版：不写入硬盘，重启恢复原状
+  - 无人值守版：自动分区 + 自动安装，全程无需人工干预
+- **询问用户**：磁盘布局确认（分区方案展示 + 理由）+ 是否同时打包体验版和无人值守版（还是只要一个）
+- 验证：ISO 能在虚拟机中启动 + 基本功能正常（冒烟测试）
+- 注意：冒烟测试必须执行，避免交付无法启动的 ISO
+
+#### 决策日志要求（每步生成，随产物上传）
+
+每个组件记录：
+- 组件名 + 版本
+- 选择理由（为什么选这个版本）
+- 编译参数 + 参数理由（为什么用这些参数）
+- 参考来源（URL 列表）
+
+每个避坑记录：
+- 组件名
+- 问题描述
+- 严重程度（critical / medium / low）
+- 规避措施
+- 来源
+- 是否已规避 + 规避方式
+
+### 阶段 C：报告 + 产物提交（构建完成后必须执行）
+
+构建完成后，agent 必须生成完整的构建报告和产物使用指南，提交到用户 fork 仓库（详见 `report-protocol.md`）：
+
+1. **构建报告**（`dist/report/build-report.md`）：构建摘要 + 用户偏好回顾 + 9 步摘要 + 决策日志 + 避坑报告 + 失败记录 + 冒烟测试 + 风险提示
+2. **决策日志**（`dist/report/decision-log.md`）：每步的组件/版本/参数/理由/来源
+3. **避坑报告**（`dist/report/pitfall-report.md`）：每步的已知坑/严重程度/规避措施
+4. **失败知识库**（`dist/report/failure-knowledge.md`）：构建中遇到的失败 + 分类 + 解决方案
+5. **冒烟测试报告**（`dist/report/smoke-test.md`）：ISO 启动 + 基本功能验证
+6. **安装指南**（`dist/guide/install-guide.md`）：体验版 + 无人值守版安装步骤
+7. **首次启动指南**（`dist/guide/first-boot.md`）：NVIDIA 驱动联网安装 + 基本验证
+8. **日常使用指南**（`dist/guide/daily-use.md`）：常用命令 + 故障排查 + 安全配置
+9. **提交**：`git add dist/ && git commit && git push` + 发布 GitHub Release
+
+### 阶段 D：发行版运行端（内嵌 AI 携带理念）
+
+内嵌 AI 助手的职责指导（详见 `system-setup.md`）：
+1. 帮助用户解答 Linux 使用问题（面向新手，通俗语言）
+2. 根据用户硬件，主动建议性能优化方案（TLP / 电压下探 / 功率墙）
+3. 帮助用户排查故障（声音 / 键盘 / 关机 / 包管理）
+4. 推荐适合用户场景的软件
+5. 定期扫描系统，发现可优化项并主动建议
+
+AI 应了解这台电脑的完整配置（从系统配置文件读取），所有建议都针对这台具体设备，而非泛泛而谈。
 
 ## 三大能力
 
@@ -18,9 +226,8 @@
 
 每次搜索不仅找"最佳实践"，还要**主动搜索已知坑**：
 
-**双轨搜索**：
-- **轨道 1**：最佳实践搜索（如 "GCC 15 best -march flags for haswell 2025"）
-- **轨道 2**：避坑搜索（必须执行，如 "GCC 15 -march haswell known issues bugs 2025"）
+- **轨道 1**：最佳实践搜索
+- **轨道 2**：避坑搜索（必须执行）
 
 **避坑关注点**：
 - 该版本/配置的已知 critical bug
@@ -28,16 +235,14 @@
 - 会影响用户体验的坑（卡顿、黑屏、输入法失效等）
 - 社区已知的 workaround
 
-**输出**：`pitfall-report.json`（每步生成）
-
 详见 `search-protocol.md`。
 
 ### 能力 2：构建进度管理（Progress & Resume）
 
 构建可能持续 4-6 小时，必须支持**断点续传**：
 
-- **进度文件**：`build-progress.json` 实时记录每步状态
-- **进度粒度**：Step → 包 → 命令 三级
+- **进度文件**：实时记录每步状态
+- **进度粒度**：步骤 → 包 → 命令 三级
 - **断点续传**：构建中断后从断点继续，不重跑已完成步骤
 
 详见 `progress-protocol.md`。
@@ -48,193 +253,9 @@
 
 - **失败分类**：网络/编译/依赖/资源/配置 五类
 - **恢复方案**：每类失败提供多个恢复选项 + 风险等级
-- **失败知识库**：`failure-kb.json` 记录已知失败模式和解决方案
+- **失败知识库**：记录已知失败模式和解决方案
 
 详见 `failure-protocol.md`。
-
-## 完整流程
-
-### 阶段 A：用户电脑端（SKILL 驱动）
-
-**A1. 环境探查**
-- 运行 `build/scripts/probe.sh` 收集硬件信息
-- **SKILL 行为**：根据探查结果，主动搜索该硬件的最佳 Linux 配置
-  - 例：检测到 NVIDIA RTX 4090 → 搜索 "RTX 4090 Linux best kernel config 2025"
-  - 例：检测到 64GB 内存 → 搜索 "64GB RAM Linux vm tuning best practices"
-
-**A2. 偏好问答**（6 个问题，通俗语言）
-
-| 问题 | 选项 | 说明 |
-|------|------|------|
-| Q1 桌面环境 | XFCE / GNOME / KDE / i3 | 根据内存/CPU 推荐 |
-| Q2 常用软件 | 浏览器/办公/开发/媒体/游戏/设计 | 预装到 Linux |
-| Q3 使用场景 | 办公/开发/游戏/设计/综合 | 决定内核调优方向 |
-| Q4 性能倾向 | 性能/均衡/省电 | 笔记本推荐均衡 |
-| Q5 安装方式 | 体验版/无人值守安装版 | 建议先体验 |
-| Q6 其他偏好 | 语言/时区/双系统/加密 | 系统配置 |
-
-**SKILL 行为**：每个回答后，主动搜索该选择的最新最佳实践 + 避坑
-  - 例：用户选 KDE → 搜索 "KDE Plasma 6 best configuration 2025" + "KDE Plasma 6 known issues 2025"
-  - 例：用户选游戏 → 搜索 "Linux gaming best setup Proton 2025" + "Linux gaming known issues 2025"
-
-**A3. 生成配置**
-- 综合探查 + 问答 + 搜索结果，生成 `ttl-config.json`
-- **SKILL 行为**：配置中每个字段都有"为什么这样选"的注释
-- 向用户展示配置摘要 + 每个决策的理由 + 避坑报告
-
-### 阶段 B：GitHub Actions 构建端（SKILL 理念驱动每步决策）
-
-**核心原则：每个 Step 开始前，AI 必须执行"搜索-决策-记录"循环**
-
-```
-每个 Step 的标准流程：
-1. 读取 build-progress.json（检查是否需要断点续传）
-2. 读取 ttl-config.json + versions.lock
-3. 搜索-决策-记录（最佳实践 + 避坑双轨）
-4. 执行构建（带进度更新）
-5. 验证产物
-6. 更新 build-progress.json
-7. 上传 artifact + 决策日志 + 避坑报告
-```
-
-**Step 1-9 的 SKILL 搜索决策示例**：
-
-| Step | 构建内容 | SKILL 主动搜索示例 |
-|------|---------|-------------------|
-| Step 1 | 主机准备 | "LFS 12.4 best host preparation 2025" |
-| Step 2 | 交叉工具链 | "GCC 15 best -march flags for <用户CPU> 2025"、"LTO best practices GCC 2025" |
-| Step 3 | Chroot 工具 | "Python 3.13 best build flags 2025" |
-| Step 4 | 基础系统（~50 包） | 每个包搜索最佳编译参数；"glibc 2.42 best security flags 2025" |
-| Step 5 | 内核 + GRUB | "Linux 6.16 best kernel config for <用户硬件> 2025"、"GRUB UEFI best config 2025" |
-| Step 6 | 桌面体验 | "<桌面环境> best theme configuration 2025"、"fcitx5 rime best config 2025"、"Linux desktop fonts best practice 2025" |
-| Step 7 | 用户软件 + Wine | "Wine 9 best configuration for <用户GPU> 2025"、"WinApps best setup 2025" |
-| Step 8 | AI 助手 | "llama.cpp best build flags for <用户CPU> 2025"、"Qwen3.5-9B best inference settings 2025" |
-| Step 9 | 打包 ISO | "live-build best ISO configuration 2025"、"unattended install best preseed config 2025" |
-
-**决策日志格式**（每步生成，随产物上传）：
-```json
-{
-  "step": "step4-base-system",
-  "decisions": [
-    {
-      "component": "gcc",
-      "version": "15.2.0",
-      "reason": "LFS 12.4 指定版本，经搜索确认为当前最稳定",
-      "flags": ["-march=haswell", "-flto", "-enable-default-pie", "-enable-default-ssp"],
-      "reason_flags": "用户 CPU 为 Intel i7-8700K (Haswell)，支持 AVX2；LTO 启用链接时优化；PIE+SSP 安全加固",
-      "sources": ["https://gcc.gnu.org/install/", "https://lfs.org/..."]
-    }
-  ],
-  "pitfalls": [
-    {
-      "issue": "GCC 15.2 + glibc 2.42 在特定条件下编译失败",
-      "severity": "medium",
-      "workaround": "应用 gcc-glibc-compat.patch",
-      "source": "https://..."
-    }
-  ]
-}
-```
-
-### 阶段 C：发行版运行端（Qwen3.5-9B 携带理念）
-
-内嵌 AI 助手的系统提示词：
-```
-你是 TTL 系统内置 AI 助手，核心理念是"开箱即用 × 极致特化"。
-
-你的职责：
-1. 帮助用户解答 Linux 使用问题（面向新手，通俗语言）
-2. 根据用户硬件，主动建议性能优化方案
-3. 帮助用户排查故障
-4. 推荐适合用户场景的软件
-5. 定期扫描系统，发现可优化项并主动建议
-
-你了解这台电脑的完整配置（从 /etc/ttl-hardware.json 读取），
-所有建议都针对这台具体设备，而非泛泛而谈。
-```
-
-## 桌面体验（完整 GUI 发行版）
-
-TTL 构建的是**完整桌面 Linux 发行版**，用户启动后直接进入图形桌面，无需任何命令行操作。
-
-### 桌面环境（根据用户选择）
-
-| 选项 | 适用场景 | 包含组件 |
-|------|---------|---------|
-| **XFCE** | 轻量、老电脑 | 面板、窗口管理器、文件管理器、系统监视器、设置管理器 |
-| **GNOME** | 现代、新电脑 | Shell、文件管理器、设置、终端、软件中心 |
-| **KDE Plasma** | 高度可定制 | 桌面、面板、Plasma 工作台、系统设置 |
-| **i3/sway** | 极简、程序员 | 平铺窗口管理器、配置编辑器 |
-
-### 桌面美化（开箱即用，无需用户配置）
-
-- **图标主题**：Yaru（现代）/ Tela（扁平）/ Adwaita（默认）
-- **光标主题**：Adwaita / 自定义
-- **窗口主题**：与图标主题配套
-- **壁纸**：根据用户偏好自动选择（风景/抽象/纯色）
-- **字体**：
-  - 中文：Noto Sans CJK SC
-  - 英文：Inter / Fira Sans
-  - 等宽：JetBrains Mono / Fira Code
-  - 字体渲染：FreeType + Fontconfig 优化（hinting、antialiasing）
-- **启动画面**：TTL 品牌 Logo + 加载动画
-- **登录界面**：定制主题（LightDM/GDM/SDDM 根据桌面环境选择）
-
-### 预装核心应用（开箱即用）
-
-| 类别 | 应用 |
-|------|------|
-| **浏览器** | Firefox（默认）/ Chromium（可选） |
-| **办公** | OnlyOffice / LibreOffice |
-| **媒体** | VLC、MPV、Obs Studio |
-| **图片** | GIMP、ImageMagick |
-| **视频** | Blender、Kdenlive |
-| **音乐** | Audacity、Lollypop |
-| **终端** | GNOME Terminal / Konsole / xfce4-terminal |
-| **文件管理** | Nautilus / Dolphin / Thunar（随桌面环境） |
-| **系统工具** | 磁盘工具、网络管理器、电源管理 |
-| **开发** | VS Code、Git、Vim、Python、Node.js（根据用户选择） |
-| **AI 助手** | ttl-ai（桌面应用 + 命令行 + API） |
-
-### 输入法（开箱即用）
-
-- **框架**：fcitx5（推荐）/ ibus
-- **中文**：Rime（小狼毫）/ 拼音
-- **英文**：默认
-- **切换**：Ctrl+Space 中英文切换，Alt+Shift 输入法切换
-- **预配置**：安装后自动启用，无需用户手动设置
-
-### Windows 软件兼容（开箱即用）
-
-- **Wine 9.x**：预装 + 预配置
-- **WinApps**：Windows 应用桥接
-- **预配置**：
-  - 中文输入法在 Wine 中可用
-  - 常用 Windows 软件一键安装脚本
-  - GPU 加速配置（根据用户 GPU）
-- **桌面集成**：Wine 应用出现在应用菜单中
-
-### 网络（开箱即用）
-
-- **有线**：自动 DHCP
-- **无线**：NetworkManager 预配置，图形界面连接
-- **蓝牙**：BlueZ 预装
-- **打印机**：CUPS 预装 + 自动发现
-
-### 声音（开箱即用）
-
-- **PulseAudio / PipeWire**：预装
-- **音频设备**：自动检测
-- **默认输出**：根据用户硬件选择
-
-## 性能特化（全链路）
-
-| 层级 | 优化内容 |
-|------|---------|
-| **GCC 工具链** | `-march=<用户CPU>` + LTO + PIE + SSP |
-| **Glibc** | `--enable-stack-protector=strong` + CPU 特性自动检测 |
-| **内核** | KASLR + StackProtector + GPU 驱动 + NVME + 调度器调优 |
-| **用户空间** | 所有软件用优化后的 GCC 重新编译 |
 
 ## 风险提示（必须告知用户）
 
@@ -242,11 +263,13 @@ TTL 构建的是**完整桌面 Linux 发行版**，用户启动后直接进入�
 2. **双系统**："如果你要双系统，先关闭 Windows 的快速启动，否则 Linux 看不到 Windows 分区。"
 3. **NVIDIA 驱动**："NVIDIA 显卡用户注意：Linux 驱动需要联网安装，首次启动后需要联网。"
 4. **游戏**："Linux 游戏通过 Steam + Proton 运行，大部分 Windows 游戏可以玩，但少数有反作弊的游戏不行。"
-5. **构建时间**："GitHub Actions 构建需要 4-6 小时，免费账号每月有 2000 分钟额度，够用。"
+5. **构建时间**："构建需要 4-6 小时，注意构建平台的额度限制。"
+6. **构建环境**："LFS 构建需要专用用户和足够磁盘空间（建议 100GB+），构建期间不要中断。"
 
 ## 参考
 
 - LFS: https://www.linuxfromscratch.org/lfs/view/stable/
 - BLFS: https://linuxfromscratch.org/blfs/view/stable-systemd/
-- Qwen3.5: https://huggingface.co/Qwen/Qwen3.5-9B
 - live-build: https://github.com/debian-live/live-build
+- GitHub Actions: https://docs.github.com/actions
+- archlinux 简明指南: https://arch.icekylin.online/guide/
