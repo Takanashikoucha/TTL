@@ -124,51 +124,6 @@ LFS 构建对执行环境有严格要求，agent 在指导用户准备构建环�
 | Step 8 | AI 助手功能 | 模型能加载 + 推理正常 |
 | Step 9 | ISO 可启动 | 虚拟机中启动 + 基本功能正常
 
-## 安装后配置坑点（参考 archlinux 简明指南）
+## 安装后配置
 
-### GPU 驱动
-
-| 场景 | 坑 | 避坑 |
-|------|-----|------|
-| NVIDIA 独立显卡 | 安装官方驱动后 initramfs 包含 nouveau 模块，冲突 | 编辑 `/etc/mkinitcpio.conf` 删除 `kms`，`mkinitcpio -P` |
-| NVIDIA Turing 及更新 | `nvidia-open` 是 alpha 质量，不适用于 AMD 集显系统 | 搜索 "<GPU型号> nvidia-open known issues" |
-| AMD GCN 2.0 及以下 | 不要用 AMDGPU 驱动（实验性质） | 用 ATI 开源驱动 |
-| 双显卡 hybrid 模式 | 将 `__NV_PRIME_RENDER_OFFLOAD` 加到全局环境 → 黑屏 | 用 `prime-run <command>` 前缀 |
-| 双显卡电源管理 | 上来就装 Bbswitch → 某些硬件黑屏 | 按 optimus-manager 文档一步步尝试 |
-
-### 安全配置
-
-| 场景 | 坑 | 避坑 |
-|------|-----|------|
-| LUKS 加密 | 加密 EFI 分区 → 无法启动 | 严禁加密 EFI 分区 |
-| LUKS + TPM | 部分电脑（Intel NUC）导入后无法自动解锁 | 进固件禁用再启用 TPM |
-| Secure Boot | `enroll-keys` 可能导致变砖（OpROM 带微软签名） | 双系统用 `enroll-keys -m` |
-| fscrypt | 删除 `.fscrypt` 目录 → 永远无法解密 | 严禁删除 |
-
-### 功耗控制
-
-| 场景 | 坑 | 避坑 |
-|------|-----|------|
-| 电压下探 | 可能损坏硬件（逆向工程方法） | 从 50mV 开始，每次加 10mV，烤机测试 |
-| 功率墙 | `package power limit is locked` = 不可调 | 先检查 `intel-rapl` 的 `enabled` 值 |
-| TLP | 与 `systemd-rfkill` 冲突 | `systemctl mask systemd-rfkill.service systemd-rfkill.socket` |
-
-### 文件系统（Btrfs）
-
-| 场景 | 坑 | 避坑 |
-|------|-----|------|
-| Timeshift 恢复后无法挂载目录 | 子卷 ID 变更 | fstab 中删除 `subvolid=xxx`，改为名称指定 |
-| Timeshift 恢复后无法挂载 boot | 内核版本不一致 | chroot 后重新安装/更新内核包 |
-| 定时任务不生效 | `cron` 服务未启动 | `systemctl enable --now cronie.service` |
-
-### 故障排查
-
-| 问题 | 原因 | 解决 |
-|------|------|------|
-| 系统没有声音 | PipeWire/ALSA 未安装 | 安装 `pipewire-pulse pipewire-alsa pipewire-jack` |
-| NVIDIA 笔记本只有 HDMI 音频 | sof 驱动问题 | 内核启动参数加 `snd_hda_intel.dmic_detect=0` |
-| 关机卡住 1 分 30 秒 | 某进程不愿停止 | `DefaultTimeoutStopSec=30s` + `journalctl -p5` 排查 |
-| 升级时异常 | 包管理器数据库锁未释放 | 确认无其他包管理进程后移除数据库锁文件 |
-| 滚挂了 | 长时间未更新 → 依赖冲突 | 多看官网公告，勤更新 |
-
-详细指导见 `system-setup.md`。 |
+构建完成、用户实际安装后的系统配置（显卡驱动、安全、功耗、文件系统、故障排查）详见 `system-setup.md`。本文件只覆盖构建阶段的环境要求与各步骤坑点。

@@ -1,0 +1,18 @@
+/* 覆盖 reacticle CodeBlock：长代码块限高 + 内部滚动，避免撑爆页面 */
+.ra-codeblock__code {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+/* 滚动条样式（WebKit） */
+.ra-codeblock__code::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.ra-codeblock__code::-webkit-scrollbar-thumb {
+  background: var(--ra-color-border-strong, rgba(127, 127, 127, 0.4));
+  border-radius: 4px;
+}
+.ra-codeblock__code::-webkit-scrollbar-track {
+  background: transparent;
+}

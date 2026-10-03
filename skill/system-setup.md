@@ -22,7 +22,7 @@
 
 | GPU 架构 | 驱动 | 说明 |
 |----------|------|------|
-| Turing (TUXXX) 及更新 | `nvidia-open` | 开源驱动，alpha 质量，不适用于 AMD 集显系统 |
+| Turing (TUXXX) 及更新 | `nvidia-open` | 开源驱动，alpha 质量，不适用于含 AMD 集显的双显卡（hybrid）系统 |
 | 其他新型号 | `nvidia` | 闭源驱动 |
 | GeForce 630 以下 ~ 400 系列 | `nvidia-390xx-dkms` | 老卡专用 |
 | 更老 | `xf86-video-nouveau` | 开源驱动 |

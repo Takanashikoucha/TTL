@@ -22,8 +22,8 @@
 
 | 维度 | 推荐 | 理由 |
 |------|------|------|
-| Runner 类型 | `ubuntu-latest`（GitHub-hosted） | 免维护，LFS 官方推荐 Ubuntu 宿主 |
-| 磁盘 | 需 100GB+ | GitHub-hosted runner 默认 14GB 不够，必须用 self-hosted 或申请更大磁盘 |
+| Runner 类型 | `self-hosted`（Linux，Ubuntu 22.04+） | GitHub-hosted 磁盘只有 14GB，LFS 需要 100GB+，必须自建 |
+| 磁盘 | 需 200GB+ | 基础系统 50 包 + 桌面 + 用户软件的中间产物很大 |
 | 时长 | 单 job 上限 360 分钟 | 9 步总耗时 4-6 小时，必须分步 + 断点续传 |
 | 并发 | 同一仓库同一 workflow 串行 | 避免两个构建互相污染 `/mnt/lfs` |
 
@@ -45,13 +45,11 @@
 name: TTL Build
 
 on:
-  workflow_dispatch:          # 手动触发
+  workflow_dispatch:          # 手动触发（构建耗时长，手动更可控）
     inputs:
       resume_from:
         description: "断点续传点（留空 = 从头构建）"
         required: false
-  push:
-    branches: [main]         # 可选：push 触发
 
 concurrency:
   group: ttl-build           # 同一时间只跑一个构建

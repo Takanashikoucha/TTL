@@ -232,5 +232,5 @@
 1. **构建完成后立即提交**：不等用户要求，agent 主动提交
 2. **提交到 fork 仓库**：`git add dist/ && git commit && git push`
 3. **同时发布 Release**：ISO 文件发布到 GitHub Release（artifact 保留期只有 90 天）
-4. **报告必须完整**：所有 8 个章节 + 4 个 guide 文件缺一不可
+4. **报告必须完整**：build-report.md 的 8 个章节 + 3 份指南缺一不可
 5. **SHA256 校验**：每个 ISO 文件附 SHA256 校验和

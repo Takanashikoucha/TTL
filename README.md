@@ -225,14 +225,14 @@ dist/
 TTL/
 ├── README.md                    # 本文件（面向 agent + 面向人类）
 ├── skill/
-│   ├── SKILL.md               # 核心理念 + 完整流程（含 9 步构建指导）+ 三大能力
-│   ├── search-protocol.md     # 搜索-决策-记录-避坑 指导
-│   ├── progress-protocol.md   # 进度管理 + 断点续传 指导
-│   ├── failure-protocol.md    # 失败分类 + 恢复指导
-│   ├── build-environment.md   # 构建环境要求 + 各步骤坑点 + 验证方法
-│   ├── github-actions.md      # GitHub Actions 构建指导
-│   ├── report-protocol.md     # 构建报告 + 产物指南 指导
-│   └── system-setup.md        # 安装后系统配置指导
+│   ├── SKILL.md                 # 核心理念 + 完整流程（含 9 步构建指导）+ 三大能力
+│   ├── build-environment.md     # 构建环境要求 + 各步骤坑点 + 验证方法
+│   ├── search-protocol.md       # 搜索-决策-记录-避坑 指导
+│   ├── progress-protocol.md     # 进度管理 + 断点续传 指导
+│   ├── failure-protocol.md      # 失败分类 + 恢复指导
+│   ├── github-actions.md        # GitHub Actions 构建指导
+│   ├── report-protocol.md       # 构建报告 + 产物指南 指导
+│   └── system-setup.md          # 安装后系统配置指导
 ├── dist/                        # 构建产物（构建完成后由 agent 提交）
 │   ├── iso/                   # ISO 文件
 │   ├── report/                # 构建报告

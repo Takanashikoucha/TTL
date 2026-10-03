@@ -1,0 +1,15 @@
+# 依赖与构建产物
+node_modules/
+article/node_modules/
+article/dist/
+dist/
+
+# npm 缓存
+.npm-cache/
+
+# agent 状态文件
+.dsh-state.md
+
+# 系统/编辑器杂项
+.DS_Store
+*.log
